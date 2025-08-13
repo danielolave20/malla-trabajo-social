@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Malla Interactiva - Trabajo Social (Advance)</title>
+<meta name="theme-color" content="#111827" />
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<style>
+  :root{
+    --basica:#1fb6a6; --lic:#ff6b9b; --esp:#4ecdc4;
+    --ink:#0f172a; --muted:#64748b; --ring:#e5e7eb; --card:#fff;
+    --done:#d4edda; --locked:#f3f4f6; --locked-text:#374151; --accent:#111827;
+  }
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;background:linear-gradient(180deg,#fff,#f7f8fc);margin:0;color:var(--ink)}
+  h1{margin:20px 16px 6px;text-align:center;font-size:clamp(22px,3.5vw,34px)}
+  .subtitle{text-align:center;color:var(--muted);margin-bottom:6px}
+  .legend{display:flex;gap:12px;justify-content:center;margin:4px 0 10px;flex-wrap:wrap}
+  .legend span{background:#fff;border:1px solid var(--ring);border-radius:999px;padding:8px 14px;display:flex;align-items:center;gap:8px}
+  .dot{width:12px;height:12px;border-radius:50%}
+  .dot.basica{background:var(--basica)} .dot.lic{background:var(--lic)} .dot.esp{background:var(--esp)}
+
+  .toolbar{max-width:1200px;margin:6px auto 12px;display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:0 16px}
+  .btn{border:0;background:var(--accent);color:#fff;padding:12px 16px;border-radius:14px;font-weight:800;cursor:pointer;min-height:44px}
+  .btn.secondary{background:#e5e7eb;color:#111827}
+  .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--ring)}
+  .btn.small{padding:8px 10px;border-radius:10px;min-height:36px}
+
+  .stats{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .chip{background:#fff;border:1px solid var(--ring);border-radius:999px;padding:8px 12px;font-weight:700;color:#111827}
+  .bar{position:relative;height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden;min-width:180px}
+  .bar>span{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--basica),var(--lic));border-radius:999px}
+
+  main{max-width:1200px;margin:0 auto;padding:0 16px 28px}
+  .year{margin-bottom:24px}
+  .year h2{margin:10px 4px 10px;font-size:18px;text-transform:uppercase;letter-spacing:.4px;color:#334155}
+  .yearhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .yearstats{display:flex;gap:10px;align-items:center}
+  .term-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+
+  .card{background:var(--card);border:1px solid var(--ring);border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(29,40,72,.06)}
+  .card h3{margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:.4px}
+
+  /* Cursos como cuadros iguales */
+  .courses{display:grid;grid-template-columns:1fr;gap:10px}
+  .course{position:relative;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;border-radius:12px;color:#fff;cursor:pointer;min-height:92px;font-weight:800;line-height:1.12;transition:transform .1s ease, box-shadow .2s ease}
+  .course:hover:not(.locked):not(.completed){transform:translateY(-1px);box-shadow:0 10px 22px rgba(29,40,72,.10)}
+  .course.basica{background:var(--basica)}
+  .course.lic{background:var(--lic)}
+  .course.esp{background:var(--esp)}
+  .course.completed{text-decoration:line-through;background:var(--done)!important;color:#0f5132;border:1px solid #b7e4c7}
+  .course.locked{background:var(--locked)!important;color:var(--locked-text)!important;cursor:not-allowed;border:1px dashed #d1d5db}
+  .course .check{position:absolute;left:10px;top:10px;width:20px;height:20px;border-radius:6px;border:2px solid #ffffffaa;background:#00000010;display:grid;place-items:center;font-size:13px}
+  .course.completed .check{border-color:#198754;background:#198754;color:#fff}
+  .course .tag{position:absolute;right:10px;top:10px;font-size:11px;color:#fff;padding:2px 8px;border-radius:10px;background:#00000033}
+  .course .auth{position:absolute;right:10px;bottom:10px;font-size:11px;background:#111827;color:#fff;padding:2px 6px;border-radius:8px}
+  .authBtn{position:absolute;left:10px;bottom:10px;font-size:11px;background:#111827;color:#fff;padding:6px 10px;border-radius:8px;border:0;cursor:pointer}
+  .authBtn.hidden{display:none}
+  .gradeBtn{position:absolute;left:10px;top:38px;font-size:11px;background:#111827;color:#fff;padding:6px 10px;border-radius:8px;border:0;cursor:pointer}
+  .gradeBadge{position:absolute;right:10px;bottom:34px;background:#0000003a;color:#fff;border-radius:8px;padding:2px 6px;font-size:12px}
+
+  /* Mensajes */
+  .final-message{display:none;background:#d1fae5;border:1px solid #10b981;padding:16px;margin:10px auto;border-radius:12px;max-width:900px;text-align:center;font-size:18px;color:#065f46;font-weight:700}
+
+  /* Modal genérico */
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:60}
+  .modal.show{display:flex}
+  .modal .box{background:#ffffff;border-radius:18px;padding:22px;max-width:520px;width:min(92%,520px);margin:16px;border:1px solid var(--ring);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .modal h3{margin:0 0 12px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  input[type="number"], input[type="file"], input[type="text"]{padding:10px 12px;border:1px solid var(--ring);border-radius:10px;min-height:44px}
+
+  /* Modal de felicitación con confeti */
+  .congrats{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:50}
+  .congrats.show{display:flex}
+  .congrats .box{background:#ffffff;border-radius:18px;padding:28px;max-width:640px;margin:16px;border:1px solid var(--ring);box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center}
+  .congrats h2{margin:0 0 6px;font-size:clamp(20px,3vw,28px);color:#0f5132}
+  .congrats p{margin:8px 0 0;color:#374151}
+  .confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  @keyframes fall{to{transform:translateY(110vh) rotate(1turn);opacity:.9}}
+  .piece{position:absolute;width:10px;height:16px;opacity:.85}
+
+  /* Historia */
+  details.log{background:#fff;border:1px solid var(--ring);border-radius:14px;padding:12px;margin:10px 16px}
+  details.log summary{cursor:pointer;font-weight:800}
+  .loglist{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;margin-top:8px;max-height:260px;overflow:auto}
+
+  @media (hover:none){
+    .btn{padding:14px 18px}
+    .course{min-height:100px}
+  }
+</style>
+</head>
+<body>
+  <h1>Malla Interactiva - Trabajo Social (Advance)</h1>
+  <div class="subtitle">Optimizada para tablet/Android · 8 trimestres · Sincrónicas 2×/semana + asincrónicas</div>
+  <div class="legend">
+    <span><span class="dot basica"></span> Básica</span>
+    <span><span class="dot lic"></span> Licenciatura</span>
+    <span><span class="dot esp"></span> Especialidad</span>
+  </div>
+
+  <div class="toolbar">
+    <div class="stats">
+      <span class="chip" id="globalPct">Avance: 0%</span>
+      <div class="bar" title="Progreso global"><span id="globalBar" style="width:0%"></span></div>
+      <span class="chip" id="gpaChip">Promedio: —</span>
+      <span class="chip" id="distChip">Distinción: —</span>
+    </div>
+    <div class="actions">
+      <button class="btn secondary" id="authModeBtn">Modo autorización: OFF</button>
+      <button class="btn secondary" id="expand">Expandir/Colapsar</button>
+      <button class="btn" id="export">Exportar</button>
+      <button class="btn ghost" id="import">Importar</button>
+      <input id="importFile" type="file" accept="application/json" style="display:none" />
+      <button class="btn" id="reset">Reiniciar</button>
+    </div>
+  </div>
+
+  <main id="root"></main>
+
+  <details class="log"><summary>Historial de acciones</summary>
+    <div class="loglist" id="history"></div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn small ghost" id="clearHistory">Limpiar historial</button>
+    </div>
+  </details>
+
+  <div id="finalMsg" class="final-message"></div>
+
+  <!-- Modal de nota -->
+  <div class="modal" id="gradeModal">
+    <div class="box">
+      <h3>Asignar/editar nota</h3>
+      <div class="row" style="margin-bottom:10px">
+        <label for="gradeInput">Nota (1.0 a 7.0):</label>
+        <input id="gradeInput" type="number" min="1" max="7" step="0.1" placeholder="Ej: 6.2" />
+      </div>
+      <div class="row">
+        <button class="btn" id="saveGrade">Guardar</button>
+        <button class="btn secondary" id="clearGrade">Quitar nota</button>
+        <button class="btn ghost" id="closeGrade">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de felicitación -->
+  <div id="congrats" class="congrats">
+    <div class="confetti" id="confetti"></div>
+    <div class="box">
+      <h2>¡Felicidades! 🎓</h2>
+      <p>Has aprobado la totalidad de tus ramos. Estás a un pequeño paso de ser <strong>Trabajador Social</strong>. ¡Éxito en tu Examen de Título!</p>
+      <div style="margin-top:14px;display:flex;gap:8px;justify-content:center">
+        <button id="closeCongrats" class="btn secondary">Cerrar</button>
+        <button id="resetCongrats" class="btn">Reiniciar malla</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const KEY = 'malla_ts_avance_per_course_v2';
+let saved = JSON.parse(localStorage.getItem(KEY) || '{}'); // { courseId: true }
+let auth = JSON.parse(localStorage.getItem(KEY+'_auth_courses') || '{}'); // { courseId: true }
+let authMode = JSON.parse(localStorage.getItem(KEY+'_authMode') || 'false');
+let grades = JSON.parse(localStorage.getItem(KEY+'_grades') || '{}'); // { courseId: number }
+let history = JSON.parse(localStorage.getItem(KEY+'_history') || '[]'); // [{ts, action, id, label, extra}]
+
+const plan = [
+  { y:'Primer año', tr:[
+    {t:'Trimestre 1', cursos:[
+      {n:'Fundamentos del Trabajo Social', track:'basica'},
+      {n:'Antropología Cultural', track:'basica'},
+      {n:'Economía y Sociedad', track:'basica'},
+      {n:'Historia y Política Social de Chile', track:'basica'},
+    ]},
+    {t:'Trimestre 2', cursos:[
+      {n:'Fundamentos de la Intervención Social', track:'basica'},
+      {n:'Teorías Sociológicas', track:'basica'},
+      {n:'Psicología Social', track:'basica'},
+      {n:'Justicia Social y Derechos Humanos', track:'basica'},
+    ]},
+    {t:'Trimestre 3', cursos:[
+      {n:'Enfoques y Estrategias de la Intervención Social', track:'basica'},
+      {n:'Epistemología de las Ciencias Sociales', track:'lic'},
+      {n:'Salud Mental', track:'lic'},
+      {n:'Políticas Sociales', track:'esp'},
+    ]},
+  ]},
+  { y:'Segundo año', tr:[
+    {t:'Trimestre 4', cursos:[
+      {n:'Trabajo Social con Personas y Familias', track:'esp'},
+      {n:'Lógica de la Investigación Social', track:'lic'},
+      {n:'Pobreza y Exclusión Social', track:'esp'},
+      {n:'Diseño de Proyectos Sociales', track:'esp'},
+    ]},
+    {t:'Trimestre 5', cursos:[
+      {n:'Trabajo Social con Organizaciones', track:'esp'},
+      {n:'Investigación Social Cualitativa', track:'lic'},
+      {n:'Investigación Social Cuantitativa', track:'lic'},
+      {n:'Evaluación de Proyectos Sociales', track:'esp'},
+    ]},
+    {t:'Trimestre 6', cursos:[
+      {n:'Trabajo Social y Desarrollo Local', track:'esp'},
+      {n:'Análisis de los Datos Cualitativos', track:'lic'},
+      {n:'Análisis de los Datos Cuantitativos', track:'lic'},
+      {n:'Perspectivas Éticas en Trabajo Social', track:'esp'},
+    ]},
+  ]},
+  { y:'Tercer año', tr:[
+    {t:'Trimestre 7', cursos:[
+      {n:'Módulo Integrador: Intervención Aplicada I', track:'esp'},
+      {n:'Seminario de Título I', track:'lic'},
+      {n:'Análisis de Políticas Sociales', track:'esp'},
+      {n:'Electivo I', track:'esp'},
+    ]},
+    {t:'Trimestre 8', cursos:[
+      {n:'Módulo Integrador: Intervención Aplicada II', track:'esp'},
+      {n:'Seminario de Título II', track:'lic'},
+      {n:'Gestión e Innovación de la Intervención Social', track:'esp'},
+      {n:'Electivo II', track:'esp'},
+    ]},
+  ]},
+];
+
+function flatTerms(){ return plan.flatMap(y=>y.tr); }
+function courseId(tIndex,cIndex){ return `t${tIndex}_c${cIndex}`; }
+function prevTermComplete(tIndex){
+  if(tIndex===0) return true;
+  const prev = flatTerms()[tIndex-1];
+  return prev.cursos.every((c,i)=> !!saved[courseId(tIndex-1,i)]);
+}
+function log(action, id, label, extra=''){
+  const entry = {ts:new Date().toISOString(), action, id, label, extra};
+  history.unshift(entry);
+  localStorage.setItem(KEY+'_history', JSON.stringify(history));
+  renderHistory();
+}
+
+function render(){
+  const root = document.getElementById('root');
+  root.innerHTML='';
+  const finalMsg = document.getElementById('finalMsg');
+
+  const terms = flatTerms();
+  let tIndex = 0; let total=0; let done=0; let gradedCount=0; let gradeSum=0;
+
+  plan.forEach((year, yi)=>{
+    const sec = document.createElement('section'); sec.className='year';
+    const yhead = document.createElement('div'); yhead.className='yearhead';
+    const yh = document.createElement('h2'); yh.textContent=year.y;
+    const ystats = document.createElement('div'); ystats.className='yearstats';
+    const ybar = document.createElement('div'); ybar.className='bar'; const yfill=document.createElement('span'); yfill.style.width='0%'; yfill.id=`ybar_${yi}`; ybar.appendChild(yfill);
+    const ychip = document.createElement('span'); ychip.className='chip'; ychip.id=`ychip_${yi}`; ychip.textContent='Año: 0%';
+    ystats.appendChild(ychip); ystats.appendChild(ybar);
+    yhead.appendChild(yh); yhead.appendChild(ystats); sec.appendChild(yhead);
+
+    const termGrid = document.createElement('div'); termGrid.className='term-grid';
+
+    let yearTotal=0, yearDone=0;
+
+    year.tr.forEach(term=>{
+      const card = document.createElement('div'); card.className='card';
+      const h3 = document.createElement('h3'); h3.textContent = term.t; card.appendChild(h3);
+
+      const list = document.createElement('div'); list.className='courses';
+      const unlockedByPrev = prevTermComplete(tIndex);
+
+      term.cursos.forEach((c,i)=>{
+        total++; yearTotal++;
+        const id = courseId(tIndex,i);
+        const el = document.createElement('div'); el.className = `course ${c.track}`;
+        const isDone = !!saved[id];
+        const isAuthorized = !!auth[id];
+        const locked = !(unlockedByPrev || isAuthorized) && !isDone;
+        const grade = grades[id];
+        if(isDone){el.classList.add('completed'); done++; yearDone++;}
+        if(locked){el.classList.add('locked');}
+        el.innerHTML = `
+          <span class="check">${isDone?'✓':''}</span>
+          ${c.n}
+          <span class="tag">${c.track==='basica'?'Básica':(c.track==='lic'?'Lic.':'Esp.')}</span>
+          ${isAuthorized?'<span class="auth">Autorizado</span>':''}
+          ${grade?`<span class="gradeBadge">${Number(grade).toFixed(1)}</span>`:''}
+        `;
+        el.title = locked ? 'Bloqueado: debes aprobar el trimestre previo o autorizar este ramo.' : 'Clic para marcar/desmarcar aprobado';
+        el.addEventListener('click',()=>{
+          if(locked) return; // no marcar si sigue bloqueado
+          const newState = !saved[id];
+          if(newState){ saved[id]=true; log('APROBADO', id, c.n); } else { delete saved[id]; log('DESMARCAR', id, c.n); }
+          localStorage.setItem(KEY, JSON.stringify(saved));
+          render();
+        });
+
+        // Autorización puntual
+        const ab = document.createElement('button'); ab.textContent='Autorizar'; ab.className='authBtn ' + (locked && authMode ? '' : 'hidden');
+        ab.addEventListener('click',()=>{
+          if(!authMode){ alert('Activa el modo autorización.'); return; }
+          if(confirm('¿Confirmas autorización institucional para adelantar este ramo?')){
+            auth[id]=true; localStorage.setItem(KEY+'_auth_courses', JSON.stringify(auth)); log('AUTORIZAR', id, c.n);
+            render();
+          }
+        });
+        el.appendChild(ab);
+
+        // Nota
+        const gb = document.createElement('button'); gb.textContent='Nota'; gb.className='gradeBtn';
+        gb.addEventListener('click',(ev)=>{ ev.stopPropagation(); openGradeModal(id, c.n); });
+        el.appendChild(gb);
+
+        // promedios
+        if(typeof grade === 'number'){ gradedCount++; gradeSum += grade; }
+
+        list.appendChild(el);
+      });
+
+      card.appendChild(list);
+      termGrid.appendChild(card);
+      tIndex++;
+    });
+
+    // Actualizar stats de año
+    const yPct = yearTotal? Math.round((yearDone/yearTotal)*100):0;
+    yfill.style.width = yPct+'%';
+    ychip.textContent = `${year.y}: ${yPct}%`;
+
+    sec.appendChild(termGrid);
+    root.appendChild(sec);
+  });
+
+  // Global progress
+  const gPct = total? Math.round((done/total)*100):0;
+  document.getElementById('globalPct').textContent = `Avance: ${gPct}%`;
+  document.getElementById('globalBar').style.width = gPct+'%';
+
+  // GPA & Distinction
+  const gpa = gradedCount? (gradeSum/gradedCount):null;
+  document.getElementById('gpaChip').textContent = `Promedio: ${gpa? gpa.toFixed(2):'—'}`;
+  const dist = classifyGPA(gpa);
+  document.getElementById('distChip').textContent = `Distinción: ${dist}`;
+
+  // Felicitaciones
+  if(done===total && total>0){
+    finalMsg.style.display='block';
+    finalMsg.textContent = '¡Felicidades! Has aprobado la totalidad de tus ramos. Estás a un pequeño paso de ser un Trabajador Social. ¡Suerte en tu Examen de Título!';
+    showCongrats();
+  } else {
+    finalMsg.style.display='none';
+    hideCongrats();
+  }
+
+  document.getElementById('authModeBtn').textContent = `Modo autorización: ${authMode?'ON':'OFF'}`;
+  renderHistory();
+}
+
+// PWA: registrar Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW error', err));
+  });
+}
+
+function classifyGPA(gpa){
+  if(!gpa) return '—';
+  if(gpa < 4.0) return 'No titulación (<4.0)';
+  if(gpa < 5.0) return 'Aprobado (4.0–4.9)';
+  if(gpa < 6.0) return 'Aprobado con Distinción (5.0–5.9)';
+  // >=6.0
+  if(gpa < 6.5) return 'Distinción Máxima (≥6.0)*';
+  return 'Distinción Máxima (≥6.5, criterio UC)';
+}
+
+// History render
+function renderHistory(){
+  const box = document.getElementById('history');
+  if(!box) return; box.innerHTML='';
+  if(history.length===0){ box.textContent='(Sin movimientos)'; return; }
+  for(const e of history){
+    const line = document.createElement('div');
+    line.textContent = `[${new Date(e.ts).toLocaleString()}] ${e.action} · ${e.label} ${e.extra? '('+e.extra+')':''}`;
+    box.appendChild(line);
+  }
+}
+
+// Grade modal
+let currentGradeId=null, currentGradeLabel='';
+function openGradeModal(id,label){
+  currentGradeId=id; currentGradeLabel=label;
+  const m = document.getElementById('gradeModal');
+  document.getElementById('gradeInput').value = grades[id] ?? '';
+  m.classList.add('show');
+}
+function closeGradeModal(){ document.getElementById('gradeModal').classList.remove('show'); }
+
+document.getElementById('saveGrade').addEventListener('click',()=>{
+  const raw = parseFloat(document.getElementById('gradeInput').value);
+  if(isNaN(raw) || raw<1 || raw>7){ alert('Ingresa una nota válida entre 1.0 y 7.0'); return; }
+  grades[currentGradeId]=parseFloat(raw.toFixed(1));
+  localStorage.setItem(KEY+'_grades', JSON.stringify(grades));
+  log('NOTA', currentGradeId, currentGradeLabel, `Nota ${grades[currentGradeId].toFixed(1)}`);
+  closeGradeModal(); render();
+});
+
+document.getElementById('clearGrade').addEventListener('click',()=>{
+  if(currentGradeId && grades[currentGradeId]!=null){
+    delete grades[currentGradeId]; localStorage.setItem(KEY+'_grades', JSON.stringify(grades));
+    log('NOTA-ELIMINADA', currentGradeId, currentGradeLabel);
+  }
+  closeGradeModal(); render();
+});
+
+document.getElementById('closeGrade').addEventListener('click', closeGradeModal);
+
+// Modal Felicitaciones
+function showCongrats(){ const m=document.getElementById('congrats'); if(!m.classList.contains('show')){ m.classList.add('show'); launchConfetti(); } }
+function hideCongrats(){ document.getElementById('congrats').classList.remove('show'); }
+function launchConfetti(){
+  const box = document.getElementById('confetti'); if(!box) return; box.innerHTML='';
+  const colors=['#1fb6a6','#ff6b9b','#4ecdc4','#ffd166','#06f','#f51753'];
+  for(let i=0;i<120;i++){
+    const s=document.createElement('div'); s.className='piece';
+    s.style.background=colors[i%colors.length]; s.style.left=Math.random()*100+'%'; s.style.top='-10vh';
+    s.style.transform=`translateY(-10vh) rotate(${Math.random()*360}deg)`; s.style.animation=`fall ${3+Math.random()*2}s linear ${Math.random()*1.5}s forwards`;
+    box.appendChild(s);
+  }
+}
+
+document.getElementById('closeCongrats').addEventListener('click', hideCongrats);
+
+document.getElementById('resetCongrats').addEventListener('click',()=>{
+  if(confirm('¿Reiniciar tu malla completa?')){
+    saved={}; auth={}; authMode=false; grades={}; history=[];
+    localStorage.removeItem(KEY); localStorage.removeItem(KEY+'_auth_courses'); localStorage.removeItem(KEY+'_authMode'); localStorage.removeItem(KEY+'_grades'); localStorage.removeItem(KEY+'_history');
+    render(); hideCongrats();
+  }
+});
+
+// Toolbar
+let expanded=true;
+document.getElementById('expand').addEventListener('click',()=>{
+  expanded=!expanded;
+  document.querySelectorAll('.card .courses').forEach(g=> g.style.display = expanded? 'grid':'none');
+});
+
+// Export/Import
+function exportData(){
+  const payload = {saved, auth, authMode, grades, history, version:'v2'};
+  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='malla_trabajo_social_progreso.json'; a.click(); URL.revokeObjectURL(a.href);
+}
+function importData(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try {
+      const data = JSON.parse(e.target.result);
+      saved = data.saved||{}; auth = data.auth||{}; authMode=!!data.authMode; grades=data.grades||{}; history=data.history||[];
+      localStorage.setItem(KEY, JSON.stringify(saved));
+      localStorage.setItem(KEY+'_auth_courses', JSON.stringify(auth));
+      localStorage.setItem(KEY+'_authMode', JSON.stringify(authMode));
+      localStorage.setItem(KEY+'_grades', JSON.stringify(grades));
+      localStorage.setItem(KEY+'_history', JSON.stringify(history));
+      render();
+      alert('Progreso importado correctamente.');
+    } catch(err){ alert('Archivo inválido.'); }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('export').addEventListener('click', exportData);
+document.getElementById('import').addEventListener('click',()=> document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change',(e)=>{ if(e.target.files[0]) importData(e.target.files[0]); });
+
+// Reset total
+
+document.getElementById('reset').addEventListener('click',()=>{
+  if(confirm('¿Seguro que quieres reiniciar progreso, autorizaciones, notas e historial?')){
+    saved={}; auth={}; authMode=false; grades={}; history=[];
+    localStorage.removeItem(KEY); localStorage.removeItem(KEY+'_auth_courses'); localStorage.removeItem(KEY+'_authMode'); localStorage.removeItem(KEY+'_grades'); localStorage.removeItem(KEY+'_history');
+    render();
+  }
+});
+
+document.getElementById('authModeBtn').addEventListener('click',()=>{
+  authMode=!authMode; localStorage.setItem(KEY+'_authMode', JSON.stringify(authMode)); render();
+});
+
+// History controls
+function clearHistory(){ if(confirm('¿Limpiar historial?')){ history=[]; localStorage.setItem(KEY+'_history','[]'); renderHistory(); } }
+document.getElementById('clearHistory').addEventListener('click', clearHistory);
+
+render();
+</script>
+</body>
+</html>
