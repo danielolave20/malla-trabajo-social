@@ -2,19 +2,527 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Malla Trabajo Social</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw.js").then(() => {
-        console.log("Service Worker registrado");
-      });
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Malla Curricular - Trabajo Social</title>
+
+  <!-- Manifest PWA -->
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#0b1220" />
+
+  <!-- Estilos -->
+  <style>
+    :root{
+      --gen:#1fb6a6; --lic:#ff6b9b; --esp:#4ecdc4;
+      --ink:#0f172a; --muted:#e5e7eb; --ring:#e5e7eb; --card:rgba(255,255,255,.92);
+      --done:#d4edda; --locked:rgba(243,244,246,.88); --locked-text:#374151; --accent:#0b1220;
     }
-  </script>
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
+      margin:0;color:#0f172a;min-height:100vh;
+      background:url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=2400&q=80') center/cover no-repeat fixed;
+      position:relative
+    }
+    body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg,rgba(3,7,18,.78),rgba(3,7,18,.62));z-index:-1}
+    h1{margin:16px 16px 6px;text-align:center;font-size:clamp(22px,3.5vw,34px);color:#f8fafc;text-shadow:0 2px 8px rgba(0,0,0,.35)}
+    .subtitle{text-align:center;color:#e2e8f0;margin-bottom:6px}
+    .legend{display:flex;gap:12px;justify-content:center;margin:6px 0 12px;flex-wrap:wrap}
+    .legend span{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:8px 14px;display:flex;align-items:center;gap:8px;color:#f1f5f9}
+    .dot{width:12px;height:12px;border-radius:50%}
+    .dot.gen{background:var(--gen)} .dot.lic{background:var(--lic)} .dot.esp{background:var(--esp)}
+
+    .toolbar{width:100%;margin:10px 0 10px;display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:0 16px}
+    .btn{border:0;background:#0f172a;color:#fff;padding:12px 16px;border-radius:14px;font-weight:800;cursor:pointer;min-height:44px}
+    .btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
+    .btn.small{padding:8px 10px;border-radius:10px;min-height:36px}
+
+    .stats{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .chip{background:rgba(255,255,255,.15);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:8px 12px;font-weight:700;color:#f8fafc}
+    .bar{position:relative;height:12px;background:rgba(255,255,255,.22);border-radius:999px;overflow:hidden;min-width:180px}
+    .bar>span{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--gen),var(--lic));border-radius:999px}
+
+    main{margin:0; padding:0 16px 28px}
+    .year{margin-bottom:24px}
+    .year h2{margin:10px 4px 10px;font-size:18px;text-transform:uppercase;letter-spacing:.4px;color:#e2e8f0}
+    .yearhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .yearstats{display:flex;gap:10px;align-items:center}
+    .term-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;width:100%}
+
+    .card{background:var(--card);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.35);border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+    .card h3{margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:.4px;color:#0b1220}
+
+    .courses{display:grid;grid-template-columns:1fr;gap:10px}
+    .course{position:relative;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;border-radius:12px;color:#fff;cursor:pointer;min-height:92px;font-weight:800;line-height:1.12;transition:transform .1s ease, box-shadow .2s ease}
+    .course:hover:not(.locked):not(.completed){transform:translateY(-1px);box-shadow:0 10px 22px rgba(29,40,72,.25)}
+    .course.gen{background:var(--gen)} .course.lic{background:var(--lic)} .course.esp{background:var(--esp)}
+    .course.completed{text-decoration:line-through;background:var(--done)!important;color:#0f5132;border:1px solid #b7e4c7}
+    .course.locked{background:var(--locked)!important;color:var(--locked-text)!important;cursor:not-allowed;border:1px dashed #94a3b8}
+    .course .check{position:absolute;left:10px;top:10px;width:20px;height:20px;border-radius:6px;border:2px solid #ffffffaa;background:#00000010;display:grid;place-items:center;font-size:13px}
+    .course.completed .check{border-color:#198754;background:#198754;color:#fff}
+    .course .tag{position:absolute;right:10px;top:10px;font-size:11px;color:#fff;padding:2px 8px;border-radius:10px;background:#00000033}
+    .course .auth{position:absolute;right:10px;bottom:10px;font-size:11px;background:#111827;color:#fff;padding:2px 6px;border-radius:8px}
+    .authBtn{position:absolute;left:10px;bottom:10px;font-size:11px;background:#111827;color:#fff;padding:6px 10px;border-radius:8px;border:0;cursor:pointer}
+    .authBtn.hidden{display:none}
+    .gradeBtn{position:absolute;left:10px;top:38px;font-size:11px;background:#111827;color:#fff;padding:6px 10px;border-radius:8px;border:0;cursor:pointer}
+    .planBtn{position:absolute;right:10px;bottom:34px;font-size:11px;background:#78350f;color:#fff;padding:6px 10px;border-radius:8px;border:0;cursor:pointer}
+    .gradeBadge{position:absolute;right:10px;bottom:34px;background:#0000003a;color:#fff;border-radius:8px;padding:2px 6px;font-size:12px}
+    .planned{outline:3px solid #f59e0b}
+
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:60}
+    .modal.show{display:flex}
+    .modal .box{background:#ffffff;border-radius:18px;padding:22px;max-width:560px;width:min(92%,560px);margin:16px;border:1px solid var(--ring);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    .modal h3{margin:0 0 12px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    input[type="number"], input[type="file"], input[type="text"]{padding:10px 12px;border:1px solid var(--ring);border-radius:10px;min-height:44px}
+    .muted{color:#6b7280;font-size:12px}
+
+    .alertas{margin:0 16px 10px;color:#fef08a;background:rgba(250,204,21,.15);border:1px solid rgba(250,204,21,.35);padding:10px;border-radius:12px;display:none}
+    footer{color:#e2e8f0;text-align:center;margin:18px 0 10px;font-size:12px}
+
+    @media (orientation: landscape){
+      .term-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+    }
+  </style>
 </head>
 <body>
-  <h1>Malla de Trabajo Social</h1>
-  <p>App PWA con malla, IA y planificador</p>
+  <h1>Malla Curricular - Trabajo Social</h1>
+  <div class="subtitle">Optimizada para tablet/Android · 8 trimestres · Sincrónicas 2×/semana + asincrónicas</div>
+
+  <details class="legend" style="justify-content:center">
+    <summary style="cursor:pointer;color:#e2e8f0;font-weight:800">Ver leyenda de colores</summary>
+    <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
+      <span><span class="dot gen"></span> General</span>
+      <span><span class="dot lic"></span> Licenciatura</span>
+      <span><span class="dot esp"></span> Especialidad</span>
+    </div>
+  </details>
+
+  <div class="toolbar">
+    <div class="stats">
+      <span class="chip" id="globalPct">Avance: 0%</span>
+      <div class="bar" title="Progreso global"><span id="globalBar" style="width:0%"></span></div>
+      <span class="chip" id="gpaChip">Promedio: —</span>
+      <span class="chip" id="distChip">Distinción: —</span>
+    </div>
+
+    <div class="menu">
+      <button class="btn ghost" id="menuBtn">☰ Menú</button>
+      <div class="menu-panel" id="menuPanel" style="position:absolute;right:16px;top:52px;background:#0b1220;border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:8px;display:none;min-width:260px;z-index:20">
+        <button class="btn small ghost" id="miAuth" style="width:100%;text-align:left">Modo autorización: OFF</button>
+        <button class="btn small ghost" id="miExpand" style="width:100%;text-align:left">Expandir/Colapsar</button>
+        <button class="btn small ghost" id="miPlanner" style="width:100%;text-align:left">Planificador (beta)</button>
+        <div style="height:1px;background:rgba(255,255,255,.2);margin:6px 0"></div>
+        <button class="btn small ghost" id="miExport" style="width:100%;text-align:left">Exportar</button>
+        <button class="btn small ghost" id="miImport" style="width:100%;text-align:left">Importar</button>
+        <div style="height:1px;background:rgba(255,255,255,.2);margin:6px 0"></div>
+        <button class="btn small ghost" id="miBG" style="width:100%;text-align:left">Cambiar fondo (2K)</button>
+      </div>
+      <input id="importFile" type="file" accept="application/json" style="display:none" />
+      <input id="bgFile" type="file" accept="image/*" style="display:none" />
+    </div>
+  </div>
+
+  <div id="alertas" class="alertas"></div>
+
+  <!-- Botón flotante para abrir el asistente AI -->
+  <button id="aiFab" class="btn" style="position:fixed;right:16px;bottom:16px;z-index:70;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.35);display:flex;align-items:center;gap:8px">🤖 Asistente</button>
+
+  <main id="root"></main>
+
+  <!-- Modal Asistente AI -->
+  <div class="modal" id="aiModal">
+    <div class="box" style="max-width:780px">
+      <h3>Asistente AI para Trabajo Social</h3>
+      <div class="row" style="margin:8px 0 12px">
+        <label for="aiEndpoint" title="No pongas tu API key aquí">Endpoint:</label>
+        <input id="aiEndpoint" type="text" placeholder="/api/chat (recomendado)" style="min-width:260px"/>
+        <button class="btn small" id="saveEndpoint">Guardar</button>
+        <span class="muted">Usa un endpoint propio (Cloudflare Worker, Vercel, etc.). No expongas tu API key en el cliente.</span>
+      </div>
+      <div id="aiChat" style="border:1px solid var(--ring);border-radius:12px;height:360px;overflow:auto;background:#fafafa;padding:12px"></div>
+      <div class="row" style="margin-top:10px">
+        <input id="aiInput" type="text" placeholder="Pregúntame algo de la carrera…" style="flex:1" />
+        <button class="btn" id="aiSend">Enviar</button>
+        <button class="btn ghost" id="aiClose">Cerrar</button>
+      </div>
+      <div class="muted" style="margin-top:6px">Tip: menciona tu contexto (por ejemplo “trabajo en turnos”) para respuestas más útiles.</div>
+    </div>
+  </div>
+
+  <!-- Modal Notas -->
+  <div class="modal" id="gradeModal">
+    <div class="box">
+      <h3>Asignar/editar nota</h3>
+      <div class="row" style="margin-bottom:10px">
+        <label for="gradeInput">Nota (1.0 a 7.0):</label>
+        <input id="gradeInput" type="number" min="1" max="7" step="0.1" placeholder="Ej: 6.2" />
+      </div>
+      <div class="row">
+        <button class="btn" id="saveGrade">Guardar</button>
+        <button class="btn ghost" id="clearGrade">Quitar nota</button>
+        <button class="btn ghost" id="closeGrade">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Planificador -->
+  <div class="modal" id="plannerModal">
+    <div class="box">
+      <h3>Planificador de carga</h3>
+      <div class="row">
+        <label>Meta de ramos por trimestre:</label>
+        <input id="metaRamos" type="number" min="1" max="8" step="1" value="4" />
+        <label>Horas por ramo (estimado):</label>
+        <input id="horasRamo" type="number" min="1" max="12" step="1" value="3" />
+      </div>
+      <p class="muted">Sugerencia: 3–4 ramos por trimestre es una carga saludable si trabajas en turnos.</p>
+      <div class="row">
+        <button class="btn" id="savePlanner">Guardar</button>
+        <button class="btn ghost" id="closePlanner">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>App creada por <strong>Daniel Olave Valle</strong> · Agosto 2025</footer>
+
+  <!-- Script principal -->
+  <script>
+    // ====== Registro SW PWA ======
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(console.error);
+    }
+
+    // ====== Estado base (almacenado por escenario único "base") ======
+    const KB = (suffix)=> \`malla_ts__base__\${suffix}\`;
+    let saved = JSON.parse(localStorage.getItem(KB('saved')) || '{}');     // aprobados
+    let auth = JSON.parse(localStorage.getItem(KB('auth')) || '{}');       // autorizaciones
+    let authMode = JSON.parse(localStorage.getItem(KB('authMode')) || 'false');
+    let grades = JSON.parse(localStorage.getItem(KB('grades')) || '{}');   // notas
+    let planned = JSON.parse(localStorage.getItem(KB('planned')) || '{}'); // planificación
+    let plannerCfg = JSON.parse(localStorage.getItem('ts_planner') || '{"meta":4,"hr":3}');
+    let history = JSON.parse(localStorage.getItem(KB('history')) || '[]');
+
+    function saveAll(){
+      localStorage.setItem(KB('saved'), JSON.stringify(saved));
+      localStorage.setItem(KB('auth'), JSON.stringify(auth));
+      localStorage.setItem(KB('authMode'), JSON.stringify(authMode));
+      localStorage.setItem(KB('grades'), JSON.stringify(grades));
+      localStorage.setItem(KB('planned'), JSON.stringify(planned));
+      localStorage.setItem(KB('history'), JSON.stringify(history));
+    }
+
+    function log(action, id, label, extra=''){
+      const entry = {ts:new Date().toISOString(), action, id, label, extra};
+      history.unshift(entry); saveAll();
+    }
+
+    // ====== Datos de malla ======
+    const plan = [
+      { y:'Primer año', tr:[
+        {t:'Trimestre 1', cursos:[
+          {n:'Fundamentos del Trabajo Social', track:'gen'},
+          {n:'Antropología Cultural', track:'gen'},
+          {n:'Economía y Sociedad', track:'gen'},
+          {n:'Historia y Política Social de Chile', track:'gen'},
+        ]},
+        {t:'Trimestre 2', cursos:[
+          {n:'Fundamentos de la Intervención Social', track:'gen'},
+          {n:'Teorías Sociológicas', track:'gen'},
+          {n:'Psicología Social', track:'gen'},
+          {n:'Justicia Social y Derechos Humanos', track:'gen'},
+        ]},
+        {t:'Trimestre 3', cursos:[
+          {n:'Enfoques y Estrategias de la Intervención Social', track:'gen'},
+          {n:'Epistemología de las Ciencias Sociales', track:'lic'},
+          {n:'Salud Mental', track:'lic'},
+          {n:'Políticas Sociales', track:'esp'},
+        ]},
+      ]},
+      { y:'Segundo año', tr:[
+        {t:'Trimestre 4', cursos:[
+          {n:'Trabajo Social con Personas y Familias', track:'esp'},
+          {n:'Lógica de la Investigación Social', track:'lic'},
+          {n:'Pobreza y Exclusión Social', track:'esp'},
+          {n:'Diseño de Proyectos Sociales', track:'esp'},
+        ]},
+        {t:'Trimestre 5', cursos:[
+          {n:'Trabajo Social con Organizaciones', track:'esp'},
+          {n:'Investigación Social Cualitativa', track:'lic'},
+          {n:'Investigación Social Cuantitativa', track:'lic'},
+          {n:'Evaluación de Proyectos Sociales', track:'esp'},
+        ]},
+        {t:'Trimestre 6', cursos:[
+          {n:'Trabajo Social y Desarrollo Local', track:'esp'},
+          {n:'Análisis de los Datos Cualitativos', track:'lic'},
+          {n:'Análisis de los Datos Cuantitativos', track:'lic'},
+          {n:'Perspectivas Éticas en Trabajo Social', track:'esp'},
+        ]},
+      ]},
+      { y:'Tercer año', tr:[
+        {t:'Trimestre 7', cursos:[
+          {n:'Módulo Integrador: Intervención Aplicada I', track:'esp'},
+          {n:'Seminario de Título I', track:'lic'},
+          {n:'Análisis de Políticas Sociales', track:'esp'},
+          {n:'Electivo I', track:'esp'},
+        ]},
+        {t:'Trimestre 8', cursos:[
+          {n:'Módulo Integrador: Intervención Aplicada II', track:'esp'},
+          {n:'Seminario de Título II', track:'lic'},
+          {n:'Gestión e Innovación de la Intervención Social', track:'esp'},
+          {n:'Electivo II', track:'esp'},
+        ]},
+      ]},
+    ];
+
+    // ====== Utilidades ======
+    function flatTerms(){ return plan.flatMap(y=>y.tr); }
+    function courseId(tIndex,cIndex){ return \`t\${tIndex}_c\${cIndex}\`; }
+    function prevTermComplete(tIndex){
+      if(tIndex===0) return true;
+      const prev = flatTerms()[tIndex-1];
+      return prev.cursos.every((_,i)=> !!saved[courseId(tIndex-1,i)]);
+    }
+
+    // ====== Render ======
+    function render(){
+      const root = document.getElementById('root'); root.innerHTML='';
+      let tIndex = 0; let total=0; let done=0; let gradedCount=0; let gradeSum=0; let remaining=0;
+
+      plan.forEach((year, yi)=>{
+        const sec = document.createElement('section'); sec.className='year';
+        const yhead = document.createElement('div'); yhead.className='yearhead';
+        const yh = document.createElement('h2'); yh.textContent=year.y;
+        const ystats = document.createElement('div'); ystats.className='yearstats';
+        const ybar = document.createElement('div'); ybar.className='bar'; const yfill=document.createElement('span'); yfill.style.width='0%'; yfill.id=\`ybar_\${yi}\`; ybar.appendChild(yfill);
+        const ychip = document.createElement('span'); ychip.className='chip'; ychip.id=\`ychip_\${yi}\`; ychip.textContent='Año: 0%';
+        ystats.appendChild(ychip); ystats.appendChild(ybar);
+        yhead.appendChild(yh); yhead.appendChild(ystats); sec.appendChild(yhead);
+
+        const termGrid = document.createElement('div'); termGrid.className='term-grid';
+        let yearTotal=0, yearDone=0;
+
+        year.tr.forEach((term)=>{
+          const card = document.createElement('div'); card.className='card';
+          const h3 = document.createElement('h3'); h3.textContent = term.t; card.appendChild(h3);
+
+          // Chip de planificación
+          const planChip = document.createElement('div');
+          planChip.className='muted'; planChip.style.margin='6px 0 4px';
+          card.appendChild(planChip);
+
+          const list = document.createElement('div'); list.className='courses';
+          const unlockedByPrev = prevTermComplete(tIndex);
+
+          let termPlanned=0;
+
+          term.cursos.forEach((c,i)=>{
+            total++; yearTotal++;
+            const id = courseId(tIndex,i);
+            const el = document.createElement('div'); el.className = \`course \${c.track}\`;
+            const isDone = !!saved[id];
+            const isAuthorized = !!auth[id];
+            const locked = !(unlockedByPrev || isAuthorized) && !isDone;
+            const grade = grades[id];
+            const isPlanned = !!planned[id];
+            if(isDone){el.classList.add('completed'); done++; yearDone++;}
+            if(locked){el.classList.add('locked');}
+            if(isPlanned){el.classList.add('planned'); termPlanned++;}
+
+            const tagLabel = c.track==='gen'?'Gen.':(c.track==='lic'?'Lic.':'Esp.');
+            el.innerHTML = \`
+              <span class="check">\${isDone?'✓':''}</span>
+              \${c.n}
+              <span class="tag">\${tagLabel}</span>
+              \${isAuthorized?'<span class="auth">Autorizado</span>':''}
+              \${grade?'<span class="gradeBadge">'+Number(grade).toFixed(1)+'</span>':''}
+            \`;
+            el.title = locked ? 'Bloqueado: debes aprobar el trimestre previo o autorizar este ramo.' : 'Clic para marcar/desmarcar aprobado';
+            el.addEventListener('click',()=>{
+              if(locked) return;
+              const newState = !saved[id];
+              if(newState){ saved[id]=true; log('APROBADO', id, c.n); } else { delete saved[id]; log('DESMARCAR', id, c.n); }
+              saveAll(); render();
+            });
+
+            const ab = document.createElement('button'); ab.textContent='Autorizar'; ab.className='authBtn ' + (locked && authMode ? '' : 'hidden');
+            ab.addEventListener('click',()=>{
+              if(!authMode){ alert('Activa el modo autorización desde el Menú.'); return; }
+              if(confirm('¿Confirmas autorización para adelantar este ramo?')){
+                auth[id]=true; saveAll(); log('AUTORIZAR', id, c.n); render();
+              }
+            });
+            el.appendChild(ab);
+
+            const gb = document.createElement('button'); gb.textContent='Nota'; gb.className='gradeBtn';
+            gb.addEventListener('click',(ev)=>{ ev.stopPropagation(); openGradeModal(id, c.n); });
+            el.appendChild(gb);
+
+            const pb = document.createElement('button'); pb.textContent = isPlanned? 'Quitar plan' : 'Plan'; pb.className='planBtn';
+            pb.addEventListener('click',(ev)=>{ ev.stopPropagation(); planned[id] = !planned[id]; saveAll(); render(); });
+            el.appendChild(pb);
+
+            if(!isDone) remaining++;
+            if(typeof grade === 'number'){ gradedCount++; gradeSum += grade; }
+
+            list.appendChild(el);
+          });
+
+          // Actualiza chip del término con planificación
+          const hrs = termPlanned * (plannerCfg.hr||3);
+          const meta = plannerCfg.meta||4;
+          let text = \`Plan: \${termPlanned} ramos · \${hrs} h\`;
+          if(termPlanned>meta) text += ' · ⚠️ Sobrecarga';
+          else if(termPlanned===meta) text += ' · ✅ Carga óptima';
+          else if(unlockedByPrev && termPlanned<meta) text += ' · 💡 Puedes adelantar';
+          planChip.textContent = text;
+
+          card.appendChild(list);
+          termGrid.appendChild(card);
+          tIndex++;
+        });
+
+        const yPct = yearTotal? Math.round((yearDone/yearTotal)*100):0;
+        document.getElementById(\`ybar_\${yi}\`)?.style.setProperty('width', yPct+'%');
+        ychip.textContent = \`\${year.y}: \${yPct}%\`;
+
+        sec.appendChild(termGrid);
+        root.appendChild(sec);
+      });
+
+      const gPct = total? Math.round((done/total)*100):0;
+      document.getElementById('globalPct').textContent = \`Avance: \${gPct}%\`;
+      document.getElementById('globalBar').style.width = gPct+'%';
+
+      const gpa = gradedCount? (gradeSum/gradedCount):null;
+      document.getElementById('gpaChip').textContent = \`Promedio: \${gpa? gpa.toFixed(2):'—'}\`;
+      const dist = classifyGPA(gpa);
+      document.getElementById('distChip').textContent = \`Distinción: \${dist}\`;
+
+      renderAlerts(gpa, gradedCount, total, remaining);
+      document.getElementById('miAuth').textContent = \`Modo autorización: \${authMode?'ON':'OFF'}\`;
+    }
+
+    // Distinciones (escala chilena)
+    function classifyGPA(gpa){
+      if(!gpa) return '—';
+      if(gpa < 4.0) return 'No titulación (<4.0)';
+      if(gpa < 5.0) return 'Aprobado (4.0–4.9)';
+      if(gpa < 6.0) return 'Aprobado con Distinción (5.0–5.9)';
+      return 'Distinción Máxima (≥6.0)';
+    }
+
+    // Alertas
+    function renderAlerts(gpa, gradedCount, total, remaining){
+      const box = document.getElementById('alertas');
+      let msgs = [];
+      if(!gpa || gradedCount===0){ box.style.display='none'; box.innerHTML=''; return; }
+
+      const target = 6.0;
+      const sumCurrent = Object.values(grades).reduce((a,b)=> a + (typeof b==='number'? b:0), 0);
+      const reqAvg = (target*total - sumCurrent) / Math.max(1,(total-gradedCount));
+      if(reqAvg>0){
+        if(reqAvg>7){ msgs.push('Con las notas actuales, la Distinción Máxima es inalcanzable. Enfócate en asegurar Distinción.'); }
+        else if(reqAvg>=6.5){ msgs.push(\`Para Distinción Máxima necesitas promediar ≥ \${reqAvg.toFixed(2)} en los ramos restantes.\`); }
+        else if(reqAvg>=6.0){ msgs.push(\`Aún puedes lograr Distinción Máxima promediando ≥ \${reqAvg.toFixed(2)}.\`); }
+      }
+      if(gpa<5 && gpa>=4){ msgs.push('Riesgo: estás en rango de “Aprobado”. Intenta subir algunas notas para alcanzar Distinción (≥5.0).'); }
+      if(gpa<4){ msgs.push('Alerta: promedio bajo 4.0. Prioriza ramos “salvadores”.'); }
+
+      // ramos sin nota aún
+      const pendientes = [];
+      let idx=0; flatTerms().forEach((t)=>{ t.cursos.forEach((c,ci)=>{ const id=courseId(idx,ci); if(!grades[id]) pendientes.push(c.n); }); idx++; });
+      if(pendientes.length) msgs.push('Sugerencia: sube promedio en ramos sin nota: ' + pendientes.slice(0,5).join(', ') + (pendientes.length>5?'…':''));
+
+      if(msgs.length){ box.style.display='block'; box.innerHTML = '<strong>Alertas y recomendaciones</strong><ul style="margin:6px 0 0 18px">'+msgs.map(m=>`<li>${m}</li>`).join('')+'</ul>'; }
+      else { box.style.display='none'; box.innerHTML=''; }
+    }
+
+    // ====== Modales: Notas ======
+    let currentGradeId=null, currentGradeLabel='';
+    function openGradeModal(id,label){ currentGradeId=id; currentGradeLabel=label; document.getElementById('gradeInput').value = grades[id] ?? ''; document.getElementById('gradeModal').classList.add('show'); }
+    function closeGradeModal(){ document.getElementById('gradeModal').classList.remove('show'); }
+
+    document.getElementById('saveGrade').addEventListener('click',()=>{
+      const raw = parseFloat(document.getElementById('gradeInput').value);
+      if(isNaN(raw) || raw<1 || raw>7){ alert('Ingresa una nota válida entre 1.0 y 7.0'); return; }
+      grades[currentGradeId]=parseFloat(raw.toFixed(1)); saveAll(); log('NOTA', currentGradeId, currentGradeLabel, \`Nota \${grades[currentGradeId].toFixed(1)}\`); closeGradeModal(); render();
+    });
+    document.getElementById('clearGrade').addEventListener('click',()=>{
+      if(currentGradeId && grades[currentGradeId]!=null){ delete grades[currentGradeId]; saveAll(); log('NOTA-ELIMINADA', currentGradeId, currentGradeLabel); }
+      closeGradeModal(); render();
+    });
+    document.getElementById('closeGrade').addEventListener('click', closeGradeModal);
+
+    // ====== Menú ======
+    const menuBtn = document.getElementById('menuBtn');
+    const menuPanel = document.getElementById('menuPanel');
+    menuBtn.addEventListener('click', ()=> menuPanel.style.display = (menuPanel.style.display==='block'?'none':'block'));
+    document.addEventListener('click', (e)=>{ if(!menuPanel.contains(e.target) && e.target!==menuBtn){ menuPanel.style.display='none'; }});
+
+    let expanded=true;
+    document.getElementById('miExpand').addEventListener('click',()=>{
+      expanded=!expanded; document.querySelectorAll('.card .courses').forEach(g=> g.style.display = expanded? 'grid':'none'); menuPanel.style.display='none';
+    });
+
+    document.getElementById('miExport').addEventListener('click',()=>{
+      const payload = {saved, auth, authMode, grades, history, planned};
+      const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='malla_trabajo_social_progreso.json'; a.click(); URL.revokeObjectURL(a.href); menuPanel.style.display='none';
+    });
+
+    const importFile = document.getElementById('importFile');
+    document.getElementById('miImport').addEventListener('click',()=>{ importFile.click(); menuPanel.style.display='none'; });
+    importFile.addEventListener('change',(e)=>{ if(e.target.files[0]){ const reader = new FileReader(); reader.onload = (ev)=>{ try{ const data=JSON.parse(ev.target.result); saved=data.saved||{}; auth=data.auth||{}; authMode=!!data.authMode; grades=data.grades||{}; history=data.history||[]; planned=data.planned||{}; saveAll(); render(); alert('Progreso importado correctamente.'); }catch(err){ alert('Archivo inválido.'); } }; reader.readAsText(e.target.files[0]); } });
+
+    const bgFile = document.getElementById('bgFile');
+    document.getElementById('miBG').addEventListener('click',()=> bgFile.click());
+    bgFile.addEventListener('change',(e)=>{ const f=e.target.files[0]; if(!f) return; const url=URL.createObjectURL(f); document.body.style.backgroundImage=\`url('\${url}')\`; localStorage.setItem('ts_custom_bg', url); });
+    const savedBG = localStorage.getItem('ts_custom_bg'); if(savedBG){ document.body.style.backgroundImage=\`url('\${savedBG}')\`; }
+
+    document.getElementById('miAuth').addEventListener('click',()=>{ authMode=!authMode; saveAll(); document.getElementById('miAuth').textContent = \`Modo autorización: \${authMode?'ON':'OFF'}\`; render(); menuPanel.style.display='none'; });
+
+    // ====== Asistente AI (cliente) ======
+    const aiFab = document.getElementById('aiFab');
+    const aiModal = document.getElementById('aiModal');
+    const aiChat = document.getElementById('aiChat');
+    const aiInput = document.getElementById('aiInput');
+    const aiSend = document.getElementById('aiSend');
+    const aiClose = document.getElementById('aiClose');
+    const aiEndpointInput = document.getElementById('aiEndpoint');
+    const aiSaveEndpoint = document.getElementById('saveEndpoint');
+
+    let AI_ENDPOINT = localStorage.getItem('ts_ai_endpoint') || '/api/chat';
+    aiEndpointInput.value = AI_ENDPOINT;
+
+    aiFab.addEventListener('click', ()=>{ aiModal.classList.add('show'); aiInput.focus(); renderWelcome(); });
+    aiClose.addEventListener('click', ()=> aiModal.classList.remove('show'));
+    aiSaveEndpoint.addEventListener('click', ()=>{ AI_ENDPOINT = aiEndpointInput.value.trim()||'/api/chat'; localStorage.setItem('ts_ai_endpoint', AI_ENDPOINT); alert('Endpoint guardado'); });
+    aiSend.addEventListener('click', sendAI);
+    aiInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') sendAI(); });
+
+    let aiHistory = [ {role:'system', content:'Eres un asistente académico para la carrera de Trabajo Social en Chile. Respondes con rigor, claridad y ejemplos prácticos. Considera que el usuario trabaja en turnos y estudia por trimestres. Usa la escala chilena 1.0–7.0 y buenas prácticas profesionales.'} ];
+
+    function renderWelcome(){ if(aiChat.children.length===0){ const w = document.createElement('div'); w.innerHTML = '<div style="color:#111"><strong>Consejos:</strong> puedes consultar bibliografía, estrategias de intervención, diseño de proyectos sociales, preparación de exámenes, etc.</div>'; aiChat.appendChild(w); aiChat.scrollTop = aiChat.scrollHeight; } }
+    function pushMsg(role, html){ const wrap=document.createElement('div'); wrap.style.margin = '8px 0'; wrap.innerHTML = \`<div style="\${role==='user'?'background:#e2e8f0;':'background:#ffffff;'} border:1px solid #ddd;border-radius:10px;padding:10px"><strong>\${role==='user'?'Tú':'AI'}:</strong> \${html}</div>\`; aiChat.appendChild(wrap); aiChat.scrollTop = aiChat.scrollHeight; }
+    function escapeHTML(s){ return s.replace(/[&<>\"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\\'':'&#39;' }[c])); }
+
+    async function sendAI(){
+      const q = aiInput.value.trim(); if(!q) return; aiInput.value=''; pushMsg('user', escapeHTML(q));
+      try{
+        const res = await fetch(AI_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages: aiHistory.concat([{role:'user', content:q}]) }) });
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const data = await res.json();
+        const text = data.reply || data.content || data.message || JSON.stringify(data);
+        pushMsg('assistant', escapeHTML(text));
+        aiHistory.push({role:'user', content:q}); aiHistory.push({role:'assistant', content:text});
+      }catch(err){
+        pushMsg('assistant', '⚠️ No se pudo contactar el endpoint. Configura uno en “Endpoint”.');
+      }
+    }
+
+    // Inicial
+    render();
+  </script>
 </body>
 </html>
