@@ -1,13 +1,10 @@
 {
-  "name": "Malla Trabajo Social (Advance)",
-  "short_name": "Malla TS",
-  "description": "Plan de estudios interactivo con progreso, notas, autorizaciones y exportación.",
-  "start_url": "./index.html",
-  "scope": "./",
+  "name": "Malla Trabajo Social",
+  "short_name": "MallaTS",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#111827",
-  "orientation": "portrait-primary",
+  "theme_color": "#4CAF50",
   "icons": [
     {
       "src": "icons/icon-192.png",
